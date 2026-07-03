@@ -296,7 +296,7 @@ floatingEmoji: {
   width: 44,
   height: 44,
   borderRadius: 22,
-  backgroundColor: "#111827",
+  backgroundColor: "transparent",
   alignItems: "center",
   justifyContent: "center",
 },
