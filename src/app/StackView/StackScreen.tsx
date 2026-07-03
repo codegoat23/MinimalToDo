@@ -13,18 +13,21 @@ import * as Haptics from "expo-haptics";
 import BottomTab from "../components/BottomTab";
 import WeekTracker from "../components/weekTracker";
 import StackCard from "./StackCard";
+import { useTaskStore } from "../store/taskStore";
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
 
 const CARD_WIDTH = SCREEN_WIDTH * 0.7;
-const CARD_HEIGHT = SCREEN_HEIGHT * 0.50; // responsive instead of a fixed 550
+const CARD_HEIGHT = SCREEN_HEIGHT * 0.50;
 const SWIPE_THRESHOLD = SCREEN_WIDTH * 0.25;
 
-const PEEK = 390; // was 400 — that pushed the side cards almost entirely off-screen
+const PEEK = 390;
 const SIDE_WIDTH = CARD_WIDTH * 0.92;
 const SIDE_OFFSET = CARD_WIDTH / 2 - SIDE_WIDTH / 2 + PEEK;
 
-export default function StackScreen({ habits, onToggleView }: any) {
+export default function StackScreen({ onToggleView }: any) {
+  const tasks = useTaskStore((state) => state.tasks);
+
   const [index, setIndex] = useState(0);
 
   const pan = useRef(new Animated.ValueXY()).current;
@@ -32,13 +35,21 @@ export default function StackScreen({ habits, onToggleView }: any) {
   const isAnimating = useRef(false);
 
   const indexRef = useRef(index);
-  const habitsRef = useRef(habits);
+  const tasksRef = useRef(tasks);
+
+  // keep refs synced
   useEffect(() => {
     indexRef.current = index;
   }, [index]);
+
   useEffect(() => {
-    habitsRef.current = habits;
-  }, [habits]);
+    tasksRef.current = tasks;
+
+    // 🔥 FIX: if tasks shrink, prevent index crash
+    if (index >= tasks.length) {
+      setIndex(Math.max(0, tasks.length - 1));
+    }
+  }, [tasks]);
 
   const panResponder = useRef(
     PanResponder.create({
@@ -56,12 +67,14 @@ export default function StackScreen({ habits, onToggleView }: any) {
       },
 
       onPanResponderMove: (_, g) => {
-        const list = habitsRef.current;
+        const list = tasksRef.current;
         const i = indexRef.current;
+
         const hasNext = i < list.length - 1;
         const hasPrev = i > 0;
 
         let dx = g.dx;
+
         if (dx < 0 && !hasNext) dx *= 0.3;
         if (dx > 0 && !hasPrev) dx *= 0.3;
 
@@ -75,8 +88,9 @@ export default function StackScreen({ habits, onToggleView }: any) {
           useNativeDriver: false,
         }).start();
 
-        const list = habitsRef.current;
+        const list = tasksRef.current;
         const i = indexRef.current;
+
         const hasNext = i < list.length - 1;
         const hasPrev = i > 0;
 
@@ -91,9 +105,11 @@ export default function StackScreen({ habits, onToggleView }: any) {
     })
   ).current;
 
-  function completeSwipe(indexDelta: 1 | -1) {
+  function completeSwipe(delta: 1 | -1) {
     isAnimating.current = true;
-    const exitX = indexDelta > 0 ? -SCREEN_WIDTH * 1.2 : SCREEN_WIDTH * 1.2;
+
+    const exitX =
+      delta > 0 ? -SCREEN_WIDTH * 1.2 : SCREEN_WIDTH * 1.2;
 
     Animated.timing(pan, {
       toValue: { x: exitX, y: 0 },
@@ -101,11 +117,14 @@ export default function StackScreen({ habits, onToggleView }: any) {
       useNativeDriver: false,
     }).start(() => {
       pan.setValue({ x: 0, y: 0 });
+
       setIndex((i) => {
-        const lastIndex = habitsRef.current.length - 1;
-        return Math.max(0, Math.min(lastIndex, i + indexDelta));
+        const lastIndex = tasksRef.current.length - 1;
+        return Math.max(0, Math.min(lastIndex, i + delta));
       });
+
       isAnimating.current = false;
+
       if (Platform.OS !== "web") {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
       }
@@ -121,9 +140,9 @@ export default function StackScreen({ habits, onToggleView }: any) {
     }).start();
   }
 
-  const current = habits[index];
-  const next = habits[index + 1];
-  const prev = habits[index - 1];
+  const current = tasks?.[index];
+  const next = tasks?.[index + 1];
+  const prev = tasks?.[index - 1];
 
   if (!current) return null;
 
@@ -144,7 +163,6 @@ export default function StackScreen({ habits, onToggleView }: any) {
 
   return (
     <Animated.View style={[styles.container, { backgroundColor }]}>
-      {/* dark translucent wash — deepens the vivid color without changing it */}
       <View style={styles.darkOverlay} pointerEvents="none" />
 
       <SafeAreaView style={styles.safe}>
@@ -156,7 +174,12 @@ export default function StackScreen({ habits, onToggleView }: any) {
               style={[
                 styles.sideCard,
                 { width: SIDE_WIDTH, height: CARD_HEIGHT * 0.94 },
-                { transform: [{ translateX: -SIDE_OFFSET }, { scale: 0.94 }] },
+                {
+                  transform: [
+                    { translateX: -SIDE_OFFSET },
+                    { scale: 0.94 },
+                  ],
+                },
               ]}
             >
               <StackCard habit={prev} dim />
@@ -168,7 +191,12 @@ export default function StackScreen({ habits, onToggleView }: any) {
               style={[
                 styles.sideCard,
                 { width: SIDE_WIDTH, height: CARD_HEIGHT * 0.94 },
-                { transform: [{ translateX: SIDE_OFFSET }, { scale: 0.94 }] },
+                {
+                  transform: [
+                    { translateX: SIDE_OFFSET },
+                    { scale: 0.94 },
+                  ],
+                },
               ]}
             >
               <StackCard habit={next} dim />
@@ -193,7 +221,10 @@ export default function StackScreen({ habits, onToggleView }: any) {
         </View>
 
         <View style={styles.bottomTab}>
-          <BottomTab viewMode="stack" onToggleView={onToggleView} />
+          <BottomTab
+            viewMode="stack"
+            onToggleView={onToggleView}
+          />
         </View>
       </SafeAreaView>
     </Animated.View>
@@ -206,14 +237,16 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFill,
     backgroundColor: "rgba(0,0,0,0.4)",
   },
-  safe: { flex: 1, paddingHorizontal: 20, paddingTop: 16 },
-
+  safe: {
+    flex: 1,
+    paddingHorizontal: 20,
+    paddingTop: 16,
+  },
   stackArea: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
   },
-
   centerCard: {
     width: CARD_WIDTH,
     height: CARD_HEIGHT,
@@ -225,17 +258,14 @@ const styles = StyleSheet.create({
     shadowRadius: 24,
     elevation: 14,
   },
-
   sideCard: {
     position: "absolute",
     zIndex: 1,
     borderRadius: 36,
-    
   },
-
   bottomTab: {
     position: "absolute",
-    bottom:45 ,
+    bottom: 45,
     width: "100%",
     alignSelf: "center",
     paddingHorizontal: 20,

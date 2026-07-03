@@ -9,13 +9,15 @@ import {
 import WeekTracker from "../components/weekTracker";
 import BottomTab from "../components/BottomTab";
 import TaskCard from "./TaskCard";
-import { habits } from "../data/habits";
+import { useTaskStore } from "../store/taskStore";
 
 export default function GridScreen({
+  
   onToggleView,
 }: {
   onToggleView?: () => void;
 }) {
+  const habits = useTaskStore((state) => state.tasks);
   // 🎯 rotation pattern (fanned layout)
   const rotations = ["-2deg", "2deg", "2deg", "-2deg"];
 

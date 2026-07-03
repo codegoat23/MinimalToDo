@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import type { Habit } from "../data/habits";
+import { router } from "expo-router";
 
 type Props = {
   habit: Habit;
@@ -15,15 +16,24 @@ export default function TaskCard({
   const [done, setDone] = useState(false);
 
   return (
-    <View
-      style={[
-        styles.card,
-        {
-          backgroundColor: habit.color,
-          transform: [{ rotate: rotation }],
+  
+  <Pressable
+    onPress={() =>
+      router.push({
+        pathname: "/task/[id]",
+        params: {
+          id: habit.id,
         },
-      ]}
-    >
+      })
+    }
+    style={[
+      styles.card,
+      {
+        backgroundColor: habit.color,
+        transform: [{ rotate: rotation }],
+      },
+    ]}
+  >
       {/* checkbox */}
       <Pressable
         onPress={() => setDone((d) => !d)}
@@ -58,7 +68,7 @@ export default function TaskCard({
           {habit.time ?? "06:00 - 07:00"}
         </Text>
       </View>
-    </View>
+    </Pressable>
   );
 }
 
