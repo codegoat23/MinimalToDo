@@ -1,6 +1,13 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+} from "react-native-reanimated";
+
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 export default function BottomTab({
   viewMode = "grid",
@@ -9,6 +16,28 @@ export default function BottomTab({
   viewMode?: "grid" | "stack";
   onToggleView?: () => void;
 }) {
+  // 0 = grid, 1 = stack
+  const stackActive = useSharedValue(viewMode === "stack" ? 1 : 0);
+  const gridActive = useSharedValue(viewMode === "grid" ? 1 : 0);
+
+  useEffect(() => {
+    stackActive.value = withTiming(viewMode === "stack" ? 1 : 0, {
+      duration: 250,
+    });
+
+    gridActive.value = withTiming(viewMode === "grid" ? 1 : 0, {
+      duration: 250,
+    });
+  }, [viewMode]);
+
+  const stackStyle = useAnimatedStyle(() => ({
+    backgroundColor: stackActive.value === 1 ? "#B5B5B5" : "black",
+  }));
+
+  const gridStyle = useAnimatedStyle(() => ({
+    backgroundColor: gridActive.value === 1 ? "#B5B5B5" : "black",
+  }));
+
   return (
     <View style={{ flexDirection: "row", justifyContent: "space-between", width: "100%" }}>
       <Pressable style={styles.roundBtn}>
@@ -16,25 +45,19 @@ export default function BottomTab({
       </Pressable>
 
       <View style={styles.group}>
-        <Pressable 
+        <AnimatedPressable
           onPress={onToggleView}
-          style={[
-            styles.roundBtn,
-            { backgroundColor: viewMode === "stack" ? "#B5B5B5" : "black" },
-          ]}
+          style={[styles.roundBtn, stackStyle]}
         >
           <Ionicons name="copy" size={25} color="white" />
-        </Pressable>
+        </AnimatedPressable>
 
-        <Pressable
+        <AnimatedPressable
           onPress={onToggleView}
-          style={[
-            styles.roundBtn,
-            { backgroundColor: viewMode === "grid" ? "#B5B5B5" : "black" },
-          ]}
+          style={[styles.roundBtn, gridStyle]}
         >
           <Ionicons name="grid" size={25} color="white" />
-        </Pressable>
+        </AnimatedPressable>
       </View>
 
       <Pressable style={styles.roundBtn}>

@@ -1,7 +1,9 @@
+import "react-native-gesture-handler";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useColorScheme } from "react-native";
 import { useFonts } from "expo-font";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 import {
   InterTight_400Regular,
@@ -25,9 +27,12 @@ export default function RootLayout() {
   }
 
   return (
-    <>
-      <Stack screenOptions={{ headerShown: false }} />
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <Stack screenOptions={{ headerShown: false,
+           gestureEnabled: false, // kills the competing native back-swipe
+
+       }} />
       <StatusBar style={colorScheme === "dark" ? "light" : "dark"} />
-    </>
+    </GestureHandlerRootView>
   );
 }

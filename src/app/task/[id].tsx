@@ -1,7 +1,90 @@
 import React, { useState, useCallback } from "react";
-import { View, Text, TextInput, Pressable, StyleSheet } from "react-native";
+import { View, Text, TextInput, Pressable, StyleSheet, TouchableOpacity } from "react-native";
 import { useLocalSearchParams, router, useFocusEffect } from "expo-router";
-import { useTaskStore } from "../store/taskStore";
+import { Emoji, useTaskStore } from "../store/taskStore";
+import { Image } from "react-native";
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+} from "react-native-reanimated";
+
+type FloatingEmojiProps = {
+  emoji: string;
+  angle: number;
+  expanded: boolean;
+  radius: number;
+  color: string;
+  onPress: () => void;
+};
+
+
+/**
+ * 🌟 STATIC EMOJI LIST (moved OUTSIDE component to prevent re-creation)
+ */
+
+const emojis: Emoji[] = [
+  { type: "image", value: require("../../../assets/emojis/dumpbell.png") },
+  { type: "image", value: require("../../../assets/emojis/rocket.png") },
+  { type: "image", value: require("../../../assets/emojis/laptop.png") },
+  { type: "image", value: require("../../../assets/emojis/book.png") },
+  { type: "image", value: require("../../../assets/emojis/gamepad.png") },
+  { type: "image", value: require("../../../assets/emojis/target.png") },
+  { type: "image", value: require("../../../assets/emojis/camera.png") },
+  { type: "image", value: require("../../../assets/emojis/ball.png") },
+  { type: "image", value: require("../../../assets/emojis/sun.png") },
+];
+const FloatingEmoji = React.memo(function FloatingEmoji({
+  emoji,
+  angle,
+  progress,
+  radius,
+  color,
+  onPress,
+  expanded,
+}: any) {
+  const animatedStyle = useAnimatedStyle(() => {
+    const p = progress.value;
+
+    const x = Math.cos(angle) * radius * p;
+    const y = Math.sin(angle) * radius * p;
+
+    return {
+      transform: [
+        { translateX: x },
+        { translateY: y },
+        { scale: p },
+      ],
+      opacity: p,
+    };
+  });
+
+  return (
+    <Animated.View
+      pointerEvents={expanded ? "auto" : "none"}   // 🔥 FIX: stops invisible touch blocking
+      style={[styles.floatingEmoji, animatedStyle]}
+    >
+      <Pressable
+        onPress={onPress}
+        style={[
+          StyleSheet.absoluteFill,
+          {
+            backgroundColor: color,
+            borderRadius: 36,
+            justifyContent: "center",
+            alignItems: "center",
+          },
+        ]}
+      >
+        <Image
+  source={emoji.value}
+  style={{ width: 50, height: 50 }}
+  resizeMode="contain"
+/>
+      </Pressable>
+    </Animated.View>
+  );
+});
 
 export default function TaskDetail() {
   const { tasks, updateTask } = useTaskStore();
@@ -10,11 +93,19 @@ export default function TaskDetail() {
   const task = tasks.find((t) => t.id === String(id));
 
   const [title, setTitle] = useState(task?.title || "");
-  const [emoji, setEmoji] = useState(task?.emoji || "✨");
+  const [emoji, setEmoji] = useState<Emoji>(task?.emoji ||emojis[0]);
   const [isDirty, setIsDirty] = useState(false);
+  const progress = useSharedValue(0);
+   const [expanded, setExpanded] = useState(false);
+  React.useEffect(() => {
+  progress.value = withSpring(expanded ? 1 : 0, {
+    damping: 30,
+    stiffness: 120,
+  });
+}, [expanded]);
 
-  const emojis = ["😀", "🚀", "🔥", "📚", "💻", "🎮", "🌱", "☕", "🎯", "✨"];
-    const [expanded, setExpanded] = useState(false);
+
+   
 
   const fonts = {
     medium: "InterTight_500Medium",
@@ -107,48 +198,37 @@ export default function TaskDetail() {
        {/* 🌟 RADIAL EMOJI PICKER */}
 <View style={styles.radialContainer}>
   {/* CENTER BUBBLE */}
-  <Pressable
+  <TouchableOpacity
     onPress={() => setExpanded(!expanded)}
     style={[
       styles.centerBubble,
       { backgroundColor: taskColor },
     ]}
   >
-    <Text style={styles.centerEmoji}>{emoji}</Text>
-  </Pressable>
+    <Image
+  source={emoji.value}
+  style={{ width: 130, height: 130 }}
+  resizeMode="contain"
+/>
+  </TouchableOpacity>
 
   {/* SURROUNDING EMOJIS */}
-  {emojis.map((e, index) => {
-    const angle = (index / emojis.length) * Math.PI * 2;
-    const radius = expanded ? 90 : 0;
-
-    const x = radius * Math.cos(angle);
-    const y = radius * Math.sin(angle);
-
-    return (
-      <Pressable
-        key={e}
-        onPress={() => {
-          setEmoji(e);
-          setIsDirty(true);
-          setExpanded(false);
-        }}
-        style={[
-          styles.floatingEmoji,
-          {
-            transform: [
-              { translateX: x },
-              { translateY: y },
-              { scale: expanded ? 1 : 0 },
-            ],
-            opacity: expanded ? 1 : 0,
-          },
-        ]}
-      >
-        <Text style={{ fontSize: 22 }}>{e}</Text>
-      </Pressable>
-    );
-  })}
+ {emojis.map((e, index) => (
+ <FloatingEmoji
+  key={index}
+  emoji={e}
+  angle={(index / emojis.length) * Math.PI * 2}
+  radius={150}
+  expanded={expanded}
+  color={taskColor}
+  progress={progress}  
+  onPress={() => {
+    setEmoji(e); // now object, not string
+    setIsDirty(true);
+    setExpanded(false);
+  }}
+/>
+))}
 </View>
 
         <TextInput
@@ -212,7 +292,7 @@ const styles = StyleSheet.create({
   },
 
   input: {
-    fontSize: 26,
+    fontSize: 36,
     color: "#fff",
     textAlign: "center",
     width: "100%",
@@ -293,11 +373,17 @@ centerEmoji: {
 
 floatingEmoji: {
   position: "absolute",
-  width: 44,
-  height: 44,
-  borderRadius: 22,
-  backgroundColor: "transparent",
+
+  width: 72,
+  height: 72,
+  borderRadius: 36,
+
   alignItems: "center",
   justifyContent: "center",
+
+  shadowColor: "#000",
+  shadowOpacity: 0.25,
+  shadowRadius: 10,
+    elevation: 5,
 },
 });

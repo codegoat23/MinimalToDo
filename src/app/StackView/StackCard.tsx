@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { HabitEmoji } from "../components/habitemoji";
+import { StackEmoji } from "../components/stackemoji";
 
 export default function StackCard({
   habit,
@@ -29,7 +31,9 @@ export default function StackCard({
         )}
       </Pressable>
 
-      <Text style={styles.emoji}>{habit.emoji}</Text>
+          <View style={styles.emoji}>
+        <StackEmoji emoji={habit.emoji} size={250} />
+      </View>
 
       <View style={{ flex: 1 }} />
 
@@ -55,12 +59,13 @@ const styles = StyleSheet.create({
   card: {
     flex: 1,
     flexDirection:"column",
-    borderRadius: 36,
+    borderRadius: 85,
     paddingTop: 70,
     paddingBottom:70,
     overflow: "hidden",
     justifyContent: "center",
     alignItems: "center",
+    
   },
 
   dimOverlay: {
@@ -70,10 +75,10 @@ const styles = StyleSheet.create({
 
   circle: {
     position: "absolute",
-    top: 20,
-    right: 20,
-    width: 26,
-    height: 26,
+    top: 50,
+    right: 45,
+    width: 30,
+    height: 30,
     borderRadius: 13,
     borderWidth: 1.5,
     borderColor: "rgba(0,0,0,0.18)",
@@ -99,19 +104,19 @@ const styles = StyleSheet.create({
 
     color: "#111",
     letterSpacing: -0.8,
-    marginBottom: 14,
+    marginBottom: 150,
     textAlign: "center",
   },
 
   timePill: {
     flexDirection: "row",
     alignItems: "center",
-    alignSelf: "flex-start",
+    alignSelf: "center",
     gap: 6,
     paddingHorizontal: 12,
     paddingVertical: 7,
     borderRadius: 16,
-    marginLeft:30
+    
    
   },
 

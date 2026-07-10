@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import type { Habit } from "../data/habits";
 import { router } from "expo-router";
+import { HabitEmoji } from "../components/habitemoji";
 
 type Props = {
   habit: Habit;
@@ -50,7 +51,9 @@ export default function TaskCard({
       </Pressable>
 
       {/* emoji */}
-      <Text style={styles.emoji}>{habit.emoji}</Text>
+      <View style={styles.emoji}>
+  <HabitEmoji emoji={habit.emoji} size={80} />
+</View>
 
       {/* title */}
       <Text style={styles.title} numberOfLines={2}>
@@ -110,10 +113,11 @@ const styles = StyleSheet.create({
     borderColor: "#111",
   },
 
-  emoji: {
-    fontSize: 38,
-    marginBottom: 20,
-  },
+ emoji: {
+  marginBottom: 20,
+  alignItems: "center",
+  justifyContent: "center",
+},
 
   title: {
     fontSize: 20,
